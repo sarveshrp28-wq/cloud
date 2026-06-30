@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Security Events - Cloud Security Monitor{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4">
+        <i class="fas fa-exclamation-triangle"></i> Security Events
+    </h1>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="type" class="form-label">Event Type</label>
+                    <select class="form-select" id="type" name="type">
+                        <option value="">All Types</option>
+                        <option value="brute_force_attempt" {% if request.args.get('type') == 'brute_force_attempt' %}selected{% endif %}>Brute Force Attempt</option>
+                        <option value="unusual_location" {% if request.args.get('type') == 'unusual_location' %}selected{% endif %}>Unusual Location</option>
+                        <option value="unusual_time_access" {% if request.args.get('type') == 'unusual_time_access' %}selected{% endif %}>Unusual Time Access</option>
+                        <option value="privilege_escalation_attempt" {% if request.args.get('type') == 'privilege_escalation_attempt' %}selected{% endif %}>Privilege Escalation</option>
+                        <option value="bulk_data_access" {% if request.args.get('type') == 'bulk_data_access' %}selected{% endif %}>Bulk Data Access</option>
+                        <option value="account_lockout" {% if request.args.get('type') == 'account_lockout' %}selected{% endif %}>Account Lockout</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-4">
+                    <label for="severity" class="form-label">Severity</label>
+                    <select class="form-select" id="severity" name="severity">
+                        <option value="">All Severity</option>
+                        <option value="critical" {% if request.args.get('severity') == 'critical' %}selected{% endif %}>Critical</option>
+                        <option value="high" {% if request.args.get('severity') == 'high' %}selected{% endif %}>High</option>
+                        <option value="medium" {% if request.args.get('severity') == 'medium' %}selected{% endif %}>Medium</option>
+                        <option value="low" {% if request.args.get('severity') == 'low' %}selected{% endif %}>Low</option>
+                        <option value="info" {% if request.args.get('severity') == 'info' %}selected{% endif %}>Info</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Events Table -->
+    <div class="card">
+        <div class="card-header">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span><i class="fas fa-list"></i> All Security Events</span>
+                <span class="badge bg-danger">{{ events.total }} Total</span>
+            </div>
+        </div>
+        <div class="table-responsive">
+            {% if events.items %}
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Event Type</th>
+                        <th>Description</th>
+                        <th>Severity</th>
+                        <th>Source IP</th>
+                        <th>Resource</th>
+                        <th>Detected</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for event in events.items %}
+                    <tr>
+                        <td>
+                            <strong>{{ event.event_type.replace('_', ' ').title() }}</strong>
+                        </td>
+                        <td>
+                            <small>{{ event.description[:60] }}...</small>
+                        </td>
+                        <td>
+                            <span class="badge badge-{{ event.severity.value }}">
+                                {{ event.severity.value.upper() }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if event.source_ip %}
+                                <code>{{ event.source_ip }}</code>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if event.affected_resource %}
+                                <small>{{ event.affected_resource }}</small>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ event.detected_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </td>
+                        <td>
+                            <a href="/events/{{ event.id }}" class="btn btn-sm btn-info btn-sm-icon">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            <nav class="mt-4" aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% if events.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1&type={{ request.args.get('type', '') }}&severity={{ request.args.get('severity', '') }}">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ events.prev_num }}&type={{ request.args.get('type', '') }}&severity={{ request.args.get('severity', '') }}">Previous</a>
+                    </li>
+                    {% endif %}
+
+                    {% for page_num in events.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num == events.page %}
+                            <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                            {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_num }}&type={{ request.args.get('type', '') }}&severity={{ request.args.get('severity', '') }}">{{ page_num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if events.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ events.next_num }}&type={{ request.args.get('type', '') }}&severity={{ request.args.get('severity', '') }}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ events.pages }}&type={{ request.args.get('type', '') }}&severity={{ request.args.get('severity', '') }}">Last</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% else %}
+            <div class="text-center p-5">
+                <i class="fas fa-check-circle" style="font-size: 48px; color: #27ae60;"></i>
+                <p class="mt-3 text-muted">No security events detected</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

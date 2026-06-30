@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Cloud Security Monitor{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4">
+        <i class="fas fa-shield-alt"></i> Security Dashboard
+    </h1>
+
+    <!-- Key Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="stat-number text-danger">{{ total_alerts }}</div>
+                <div class="stat-label">Total Alerts</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="stat-number text-warning">{{ critical_alerts }}</div>
+                <div class="stat-label">Critical Alerts</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="stat-number text-info">{{ open_alerts }}</div>
+                <div class="stat-label">Open Alerts</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="stat-number text-success">{{ (total_alerts - open_alerts) if total_alerts > 0 else 0 }}</div>
+                <div class="stat-label">Resolved Alerts</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-chart-line"></i> Alert Trend (Last 7 Days)
+                </div>
+                <div class="card-body">
+                    <canvas id="alertTrendChart" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-exclamation-circle"></i> Alert Severity Distribution
+                </div>
+                <div class="card-body">
+                    <canvas id="severityChart" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Events and Logins Row -->
+    <div class="row">
+        <!-- Recent Security Events -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-exclamation-triangle"></i> Recent Security Events
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    {% if recent_events %}
+                        {% for event in recent_events %}
+                        <div class="alert-item {{ event.severity.value }}">
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <div>
+                                    <strong>{{ event.event_type.replace('_', ' ').title() }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ event.description[:100] }}...</small>
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock"></i> {{ event.detected_at.strftime('%Y-%m-%d %H:%M') }}
+                                    </small>
+                                </div>
+                                <span class="badge badge-{{ event.severity.value }}">
+                                    {{ event.severity.value.upper() }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-check-circle"></i>
+                            <p>No recent security events</p>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    {% if current_user.role.value in ['analyst', 'admin'] %}
+                    <a href="/events" class="btn btn-sm btn-primary">View All Events</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Logins -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-sign-in-alt"></i> Recent Logins
+                </div>
+                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                    {% if recent_logins %}
+                        <div class="timeline">
+                            {% for login in recent_logins %}
+                            <div class="timeline-item">
+                                <div>
+                                    <strong>{{ login.username }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ login.ip_address }}</small>
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock"></i> {{ login.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
+                                    </small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-user-slash"></i>
+                            <p>No recent logins</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Actions -->
+    {% if current_user.role.value == 'admin' %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-cog"></i> Admin Actions
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-primary" onclick="runThreatDetection()">
+                        <i class="fas fa-search"></i> Run Threat Detection
+                    </button>
+                    <a href="/admin/users" class="btn btn-secondary">
+                        <i class="fas fa-users"></i> Manage Users
+                    </a>
+                    <a href="/admin/logs" class="btn btn-secondary">
+                        <i class="fas fa-history"></i> View Audit Logs
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Alert Trend Chart
+    const trendCtx = document.getElementById('alertTrendChart').getContext('2d');
+    const chartData = {{ chart_data|tojson }};
+    
+    new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: chartData.dates,
+            datasets: [{
+                label: 'Alerts',
+                data: chartData.counts,
+                borderColor: '#e74c3c',
+                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                tension: 0.3,
+                fill: true,
+                pointRadius: 5,
+                pointBackgroundColor: '#e74c3c'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+
+    // Severity Distribution Chart
+    const severityCtx = document.getElementById('severityChart').getContext('2d');
+    new Chart(severityCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Critical', 'High', 'Medium', 'Low'],
+            datasets: [{
+                data: [
+                    {{ critical_alerts }},
+                    {% if total_alerts - critical_alerts > 0 %}{{ (total_alerts - critical_alerts) // 2 }}{% else %}0{% endif %},
+                    {% if total_alerts - critical_alerts > 0 %}{{ (total_alerts - critical_alerts) // 2 }}{% else %}0{% endif %},
+                    {% if total_alerts == 0 %}1{% else %}0{% endif %}
+                ],
+                backgroundColor: [
+                    '#e74c3c',
+                    '#f39c12',
+                    '#3498db',
+                    '#95a5a6'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Run Threat Detection
+    function runThreatDetection() {
+        if (confirm('Run threat detection now? This may take a moment.')) {
+            fetch('/api/run-threat-detection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Threat detection completed successfully!');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error);
+            });
+        }
+    }
+</script>
+{% endblock %}

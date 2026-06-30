@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}Event Details - Cloud Security Monitor{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <h1>
+                <i class="fas fa-exclamation-triangle"></i> Event Details
+            </h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="/events" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Events
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Event Details -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>
+                            <strong>{{ event.event_type.replace('_', ' ').title() }}</strong>
+                        </span>
+                        <span class="badge badge-{{ event.severity.value }}">
+                            {{ event.severity.value.upper() }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <h5>Event Description</h5>
+                    <p class="alert alert-warning">{{ event.description }}</p>
+
+                    <hr>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>Event Type:</strong><br>{{ event.event_type.replace('_', ' ').title() }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Severity:</strong><br><span class="badge badge-{{ event.severity.value }}">{{ event.severity.value.upper() }}</span></p>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>Detected:</strong><br>{{ event.detected_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Age:</strong><br>
+                            {% set delta = now() - event.detected_at %}
+                            {% if delta.seconds < 60 %}
+                                {{ delta.seconds }} seconds ago
+                            {% elif delta.seconds < 3600 %}
+                                {{ (delta.seconds // 60) }} minutes ago
+                            {% elif delta.seconds < 86400 %}
+                                {{ (delta.seconds // 3600) }} hours ago
+                            {% else %}
+                                {{ delta.days }} days ago
+                            {% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h5>Source Information</h5>
+                    <div class="row">
+                        {% if event.source_user_id %}
+                        <div class="col-md-6">
+                            <p><strong>Source User:</strong><br>
+                            {% set source_user = event.event.user if event.event else None %}
+                            {{ source_user.username if source_user else 'Unknown' }}
+                            </p>
+                        </div>
+                        {% endif %}
+                        
+                        {% if event.source_ip %}
+                        <div class="col-md-6">
+                            <p><strong>Source IP:</strong><br><code>{{ event.source_ip }}</code></p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if event.affected_resource %}
+                    <hr>
+                    <h5>Affected Resource</h5>
+                    <p><code>{{ event.affected_resource }}</code></p>
+                    {% endif %}
+
+                    {% if event.raw_data %}
+                    <hr>
+                    <h5>Raw Event Data</h5>
+                    <pre class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;"><code>{{ event.raw_data|tojson(indent=2) }}</code></pre>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Related Alerts -->
+            {% if alerts %}
+            <div class="card">
+                <div class="card-header bg-light">
+                    <i class="fas fa-bell"></i> Related Alerts ({{ alerts|length }})
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Title</th>
+                                <th>Severity</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for alert in alerts %}
+                            <tr>
+                                <td><strong>{{ alert.title }}</strong></td>
+                                <td><span class="badge badge-{{ alert.severity.value }}">{{ alert.severity.value.upper() }}</span></td>
+                                <td>
+                                    {% if alert.status.value == 'open' %}
+                                        <span class="badge bg-danger">OPEN</span>
+                                    {% elif alert.status.value == 'acknowledged' %}
+                                        <span class="badge bg-warning">ACKNOWLEDGED</span>
+                                    {% else %}
+                                        <span class="badge bg-success">RESOLVED</span>
+                                    {% endif %}
+                                </td>
+                                <td><small class="text-muted">{{ alert.created_at.strftime('%Y-%m-%d %H:%M') }}</small></td>
+                                <td>
+                                    <a href="/alerts/{{ alert.id }}" class="btn btn-sm btn-info btn-sm-icon">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <i class="fas fa-info-circle"></i> Event Summary
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-6">Severity</dt>
+                        <dd class="col-sm-6"><span class="badge badge-{{ event.severity.value }}">{{ event.severity.value.upper() }}</span></dd>
+
+                        <dt class="col-sm-6">Type</dt>
+                        <dd class="col-sm-6"><small>{{ event.event_type.replace('_', ' ').title() }}</small></dd>
+
+                        <dt class="col-sm-6">Event ID</dt>
+                        <dd class="col-sm-6"><small><code>#{{ event.id }}</code></small></dd>
+
+                        <dt class="col-sm-6">Alert Count</dt>
+                        <dd class="col-sm-6"><strong>{{ alerts|length }}</strong></dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Severity Indicator -->
+            <div class="card">
+                <div class="card-header bg-light">
+                    <i class="fas fa-thermometer-half"></i> Threat Level
+                </div>
+                <div class="card-body text-center">
+                    {% if event.severity.value == 'critical' %}
+                    <div style="font-size: 36px; color: #e74c3c;">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <p class="mt-2">
+                        <span class="badge badge-danger" style="font-size: 14px;">CRITICAL THREAT</span>
+                    </p>
+                    <small class="text-muted">Immediate action required</small>
+                    {% elif event.severity.value == 'high' %}
+                    <div style="font-size: 36px; color: #e74c3c;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <p class="mt-2">
+                        <span class="badge badge-danger" style="font-size: 14px;">HIGH THREAT</span>
+                    </p>
+                    <small class="text-muted">Urgent attention needed</small>
+                    {% elif event.severity.value == 'medium' %}
+                    <div style="font-size: 36px; color: #f39c12;">
+                        <i class="fas fa-exclamation"></i>
+                    </div>
+                    <p class="mt-2">
+                        <span class="badge badge-warning" style="font-size: 14px;">MEDIUM THREAT</span>
+                    </p>
+                    <small class="text-muted">Requires investigation</small>
+                    {% else %}
+                    <div style="font-size: 36px; color: #3498db;">
+                        <i class="fas fa-info-circle"></i>
+                    </div>
+                    <p class="mt-2">
+                        <span class="badge bg-info" style="font-size: 14px;">LOW THREAT</span>
+                    </p>
+                    <small class="text-muted">Informational</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

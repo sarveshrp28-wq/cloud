@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Server Error - Cloud Security Monitor{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6 text-center">
+            <div style="font-size: 96px; color: #e74c3c; margin-bottom: 20px;">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            
+            <h1 class="display-1" style="color: #2c3e50;">500</h1>
+            <h2 class="mb-3">Server Error</h2>
+            <p class="text-muted mb-4">
+                Something went wrong on our end. Our team has been notified.
+            </p>
+            
+            <div class="alert alert-danger">
+                <i class="fas fa-bug"></i>
+                <strong>What to do:</strong>
+                <ul class="mb-0 mt-2">
+                    <li>Try refreshing the page</li>
+                    <li>Clear your browser cache</li>
+                    <li>Contact the administrator if the problem persists</li>
+                </ul>
+            </div>
+            
+            <a href="/" class="btn btn-primary btn-lg">
+                <i class="fas fa-home"></i> Go to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

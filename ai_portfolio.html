@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nova AI Developer Portfolio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="ai_portfolio.css" />
+</head>
+<body>
+  <div class="canvas-overlay"></div>
+  <div class="page-shell">
+    <header class="site-header">
+      <div class="brand-wrap">
+        <div class="brand-mark">AI</div>
+        <div>
+          <p class="brand-label">AI Developer Portfolio</p>
+          <h1 class="brand-name">Nova K.</h1>
+        </div>
+      </div>
+      <nav class="site-nav">
+        <a href="#work">Projects</a>
+        <a href="#dashboard">AI Dashboard</a>
+        <a href="#skills">Tech Stack</a>
+        <a href="#contact" class="glow-button">Connect</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero-panel" id="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">AI-powered products · ML systems · generative UX</p>
+          <h2>Building the next generation of intelligent experiences.</h2>
+          <p>Crafting scalable AI applications, autonomous agents, and immersive developer tooling with a futuristic interface that feels alive.</p>
+          <div class="hero-actions">
+            <a href="#work" class="button button-primary">View Projects</a>
+            <a href="#dashboard" class="button button-secondary">See AI Status</a>
+          </div>
+          <div class="hero-meta-grid">
+            <div>
+              <span>Role</span>
+              <strong>AI Systems Architect</strong>
+            </div>
+            <div>
+              <span>Focus</span>
+              <strong>LLM Integration & ML Ops</strong>
+            </div>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="glass-card pulse-card">
+            <div class="card-tag">AI Agent Status</div>
+            <div class="status-bar">
+              <span class="status-label">Core</span>
+              <span class="status-pill online">Online</span>
+            </div>
+            <div class="terminal-shell" id="terminal-shell">
+              <div class="terminal-line">Initializing neural interface...</div>
+              <div class="terminal-line">Loading vector embeddings...</div>
+              <div class="terminal-line current">Syncing knowledge stream...</div>
+            </div>
+            <div class="status-grid">
+              <div>
+                <strong>99.9%</strong>
+                <span>Uptime</span>
+              </div>
+              <div>
+                <strong>428ms</strong>
+                <span>Latency</span>
+              </div>
+            </div>
+          </div>
+          <div class="glass-card feature-card">
+            <p class="feature-title">Highlighted build</p>
+            <h3>Autonomous prompt orchestration</h3>
+            <p>Real-time LLM workflow generation, retrieval-augmented reasoning, and secure API delivery for enterprise agents.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-block" id="work">
+        <div class="section-header">
+          <p class="eyebrow">Selected work</p>
+          <h2>Futuristic AI projects that ship fast.</h2>
+        </div>
+        <div class="project-grid">
+          <article class="project-card glass-card">
+            <div class="project-top">
+              <span>LLM Ops</span>
+              <strong>Vector Navigator</strong>
+            </div>
+            <p>Adaptive semantic search platform for AI agents, enabling precise data retrieval across distributed pipelines.</p>
+            <ul>
+              <li>OpenAI + Pinecone workflow</li>
+              <li>Multi-modal document retrieval</li>
+              <li>Continuous self-improvement loop</li>
+            </ul>
+          </article>
+          <article class="project-card glass-card">
+            <div class="project-top">
+              <span>Agent Design</span>
+              <strong>Sentinel Synth</strong>
+            </div>
+            <p>Security-aware digital assistant integrating anomaly detection, contextual reasoning and real-time alert orchestration.</p>
+            <ul>
+              <li>Custom RLHF prompt stack</li>
+              <li>Secure API token vault</li>
+              <li>Real-time telemetry dashboard</li>
+            </ul>
+          </article>
+          <article class="project-card glass-card">
+            <div class="project-top">
+              <span>Developer Tools</span>
+              <strong>AI Code Forge</strong>
+            </div>
+            <p>Intelligent coding environment that generates production-ready microservices with aligned infrastructure scaffolding.</p>
+            <ul>
+              <li>Python, FastAPI, Docker</li>
+              <li>CI/CD-ready deployment scripts</li>
+              <li>Context-aware refactor suggestions</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="section-block" id="dashboard">
+        <div class="section-header split-header">
+          <div>
+            <p class="eyebrow">AI dashboard</p>
+            <h2>Live metrics from the intelligence stack.</h2>
+          </div>
+          <a href="#contact" class="button button-secondary">Request a demo</a>
+        </div>
+        <div class="dashboard-grid">
+          <div class="glass-card dashboard-card">
+            <div class="card-row">
+              <span>Inference throughput</span>
+              <strong>32 req/s</strong>
+            </div>
+            <div class="metric-bar">
+              <div class="metric-fill" style="width: 78%;"></div>
+            </div>
+          </div>
+          <div class="glass-card dashboard-card">
+            <div class="card-row">
+              <span>Model Confidence</span>
+              <strong>94.7%</strong>
+            </div>
+            <div class="metric-bar">
+              <div class="metric-fill accent" style="width: 95%;"></div>
+            </div>
+          </div>
+          <div class="glass-card dashboard-card">
+            <div class="card-row">
+              <span>Production agents</span>
+              <strong>7 active</strong>
+            </div>
+            <div class="metric-bar">
+              <div class="metric-fill" style="width: 87%;"></div>
+            </div>
+          </div>
+          <div class="glass-card dashboard-card">
+            <div class="card-row">
+              <span>Pipeline health</span>
+              <strong>Stable</strong>
+            </div>
+            <div class="metric-pill">No incidents</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section-block" id="skills">
+        <div class="section-header">
+          <p class="eyebrow">Tech stack</p>
+          <h2>Built with the latest AI developer tools.</h2>
+        </div>
+        <div class="skill-grid">
+          <div class="skill-pill">Python</div>
+          <div class="skill-pill">PyTorch</div>
+          <div class="skill-pill">TensorFlow</div>
+          <div class="skill-pill">FastAPI</div>
+          <div class="skill-pill">Next.js</div>
+          <div class="skill-pill">Tailwind CSS</div>
+          <div class="skill-pill">OpenAI</div>
+          <div class="skill-pill">LangChain</div>
+          <div class="skill-pill">Docker</div>
+          <div class="skill-pill">Kubernetes</div>
+        </div>
+      </section>
+
+      <section class="section-block contact-block" id="contact">
+        <div class="glass-card contact-card">
+          <div>
+            <p class="eyebrow">Work with me</p>
+            <h2>Let's architect your next AI product.</h2>
+            <p>Available for senior AI development, model integration, product strategy, and architecting intelligent automation.</p>
+          </div>
+          <div class="contact-actions">
+            <a href="mailto:hello@novadev.ai" class="button button-primary">Email me</a>
+            <a href="#" class="button button-secondary">View resume</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>© 2026 Nova K. — AI Developer & Machine Learning Engineer</p>
+    </footer>
+  </div>
+  <script src="ai_portfolio.js"></script>
+</body>
+</html>

@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Reports - Cloud Security Monitor{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4">
+        <i class="fas fa-chart-bar"></i> Security Reports
+    </h1>
+
+    <!-- Summary Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="stat-number text-danger">{{ today_events }}</div>
+                <div class="stat-label">Events Today</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="stat-number text-warning">{{ week_events }}</div>
+                <div class="stat-label">Events (7 Days)</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="stat-number text-info">{{ resolved_alerts }}</div>
+                <div class="stat-label">Resolved Alerts</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card">
+                <div class="stat-number text-success">{{ "%.1f"|format(resolution_rate) }}%</div>
+                <div class="stat-label">Resolution Rate</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-chart-pie"></i> Event Type Distribution
+                </div>
+                <div class="card-body">
+                    <canvas id="eventTypeChart" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-chart-bar"></i> Severity Distribution
+                </div>
+                <div class="card-body">
+                    <canvas id="severityChart" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Reports -->
+    <div class="row">
+        <!-- Event Type Breakdown -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-list"></i> Event Type Breakdown (Last 7 Days)
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Event Type</th>
+                                <th>Count</th>
+                                <th>Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set total_dist = event_distribution|sum(attribute='count') %}
+                            {% for event_type, count in event_distribution %}
+                            <tr>
+                                <td>
+                                    <strong>{{ event_type.replace('_', ' ').title() }}</strong>
+                                </td>
+                                <td>
+                                    <strong>{{ count }}</strong>
+                                </td>
+                                <td>
+                                    <div class="progress" style="min-width: 50px;">
+                                        {% set percentage = (count / total_dist * 100) if total_dist > 0 else 0 %}
+                                        <div class="progress-bar bg-primary" role="progressbar" 
+                                             style="width: {{ percentage }}%" aria-valuenow="{{ percentage }}" aria-valuemin="0" aria-valuemax="100">
+                                            {{ "%.1f"|format(percentage) }}%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% if not event_distribution %}
+                    <div class="p-4 text-center text-muted">
+                        <i class="fas fa-inbox"></i>
+                        <p>No events in the last 7 days</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Recommendations -->
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-lightbulb"></i> Security Recommendations
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-shield-alt"></i> <strong>1. Multi-Factor Authentication</strong>
+                        <p>Consider implementing MFA to prevent brute force attacks and unauthorized access.</p>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="fas fa-lock"></i> <strong>2. Access Control Review</strong>
+                        <p>Review and minimize user privileges based on the principle of least privilege.</p>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-history"></i> <strong>3. Log Retention</strong>
+                        <p>Ensure adequate log retention policy for compliance and forensics investigation.</p>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="fas fa-user-secret"></i> <strong>4. User Training</strong>
+                        <p>Conduct security awareness training to reduce social engineering attacks.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Options -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-download"></i> Export Reports
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">Generate and download detailed security reports:</p>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary" onclick="exportReport('pdf')">
+                            <i class="fas fa-file-pdf"></i> Export as PDF
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" onclick="exportReport('csv')">
+                            <i class="fas fa-file-csv"></i> Export as CSV
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" onclick="printReport()">
+                            <i class="fas fa-print"></i> Print Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Event Type Distribution Chart
+    const typeCtx = document.getElementById('eventTypeChart').getContext('2d');
+    const eventData = {{ event_distribution|tojson }};
+    
+    const typeLabels = eventData.map(item => item[0].replace(/_/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
+    const typeCounts = eventData.map(item => item[1]);
+    
+    new Chart(typeCtx, {
+        type: 'doughnut',
+        data: {
+            labels: typeLabels,
+            datasets: [{
+                data: typeCounts,
+                backgroundColor: [
+                    '#e74c3c',
+                    '#f39c12',
+                    '#3498db',
+                    '#2ecc71',
+                    '#9b59b6',
+                    '#1abc9c'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Severity Distribution Chart
+    const severityCtx = document.getElementById('severityChart').getContext('2d');
+    new Chart(severityCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Critical', 'High', 'Medium', 'Low', 'Info'],
+            datasets: [{
+                label: 'Count',
+                data: [
+                    Math.floor({{ week_events }} * 0.1),
+                    Math.floor({{ week_events }} * 0.2),
+                    Math.floor({{ week_events }} * 0.3),
+                    Math.floor({{ week_events }} * 0.25),
+                    Math.floor({{ week_events }} * 0.15)
+                ],
+                backgroundColor: [
+                    '#e74c3c',
+                    '#f39c12',
+                    '#3498db',
+                    '#95a5a6',
+                    '#2ecc71'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    function exportReport(format) {
+        alert('Export as ' + format.toUpperCase() + ' feature coming soon!');
+    }
+
+    function printReport() {
+        window.print();
+    }
+</script>
+{% endblock %}

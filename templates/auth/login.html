@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Cloud Security Monitor{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6">
+            <div class="card shadow-lg">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-shield-alt" style="font-size: 48px; color: #2c3e50;"></i>
+                        <h2 class="mt-3">Cloud Security Monitor</h2>
+                        <p class="text-muted">Login to your account</p>
+                    </div>
+
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="remember_me" name="remember_me">
+                            <label class="form-check-label" for="remember_me">
+                                Remember me
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 btn-lg">Login</button>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <p class="text-center text-muted">
+                        Don't have an account? <a href="/auth/register">Register here</a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Demo Credentials -->
+            <div class="alert alert-info mt-4">
+                <strong>Demo Credentials:</strong>
+                <ul class="mb-0 mt-2">
+                    <li><strong>Admin:</strong> admin / password123</li>
+                    <li><strong>Analyst:</strong> analyst / password123</li>
+                    <li><strong>Viewer:</strong> viewer / password123</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

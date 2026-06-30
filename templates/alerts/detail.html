@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}Alert Details - Cloud Security Monitor{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <h1>
+                <i class="fas fa-exclamation-circle"></i> Alert Details
+            </h1>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="/alerts" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Alerts
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Alert Details -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>
+                            <strong>{{ alert.title }}</strong>
+                        </span>
+                        <span class="badge badge-{{ alert.severity.value }}">
+                            {{ alert.severity.value.upper() }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <p><strong>Status:</strong></p>
+                            {% if alert.status.value == 'open' %}
+                                <span class="badge bg-danger">OPEN</span>
+                            {% elif alert.status.value == 'acknowledged' %}
+                                <span class="badge bg-warning">ACKNOWLEDGED</span>
+                            {% else %}
+                                <span class="badge bg-success">RESOLVED</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Severity:</strong></p>
+                            <span class="badge badge-{{ alert.severity.value }}">
+                                {{ alert.severity.value.upper() }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h5>Alert Message</h5>
+                    <p class="alert alert-info">{{ alert.message }}</p>
+
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Created:</strong><br>{{ alert.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Assigned To:</strong><br>
+                            {% if alert.assigned_analyst %}
+                                {{ alert.assigned_analyst.username }}
+                            {% else %}
+                                <span class="text-muted">Not assigned</span>
+                            {% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    {% if alert.acknowledged_at %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Acknowledged:</strong><br>{{ alert.acknowledged_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if alert.resolved_at %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Resolved:</strong><br>{{ alert.resolved_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <p><strong>Resolution Notes:</strong></p>
+                            <div class="alert alert-success">{{ alert.resolution_notes or 'No notes provided' }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Event Information -->
+            <div class="card">
+                <div class="card-header bg-light">
+                    <i class="fas fa-info-circle"></i> Related Security Event
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Event Type:</strong><br>{{ event.event_type.replace('_', ' ').title() }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Severity:</strong><br><span class="badge badge-{{ event.severity.value }}">{{ event.severity.value.upper() }}</span></p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <p><strong>Description:</strong></p>
+                    <p>{{ event.description }}</p>
+
+                    {% if event.source_ip %}
+                    <p><strong>Source IP:</strong><br>{{ event.source_ip }}</p>
+                    {% endif %}
+
+                    {% if event.affected_resource %}
+                    <p><strong>Affected Resource:</strong><br>{{ event.affected_resource }}</p>
+                    {% endif %}
+
+                    <p><strong>Detected:</strong><br>{{ event.detected_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+
+                    {% if event.raw_data %}
+                    <p><strong>Additional Data:</strong></p>
+                    <pre class="bg-light p-3 rounded"><code>{{ event.raw_data|tojson(indent=2) }}</code></pre>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Actions -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <i class="fas fa-tasks"></i> Actions
+                </div>
+                <div class="card-body">
+                    {% if alert.status.value == 'open' %}
+                    <button class="btn btn-success w-100 mb-2" onclick="acknowledgeAlert()">
+                        <i class="fas fa-check"></i> Acknowledge Alert
+                    </button>
+                    {% endif %}
+
+                    {% if alert.status.value != 'resolved' %}
+                    <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#resolveModal">
+                        <i class="fas fa-checkmark-circle"></i> Resolve Alert
+                    </button>
+                    {% endif %}
+
+                    {% if alert.status.value == 'resolved' %}
+                    <div class="alert alert-success" role="alert">
+                        <i class="fas fa-check-circle"></i> This alert has been resolved
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Alert Timeline -->
+            <div class="card">
+                <div class="card-header bg-light">
+                    <i class="fas fa-history"></i> Timeline
+                </div>
+                <div class="card-body">
+                    <div class="timeline" style="padding-left: 15px;">
+                        <div class="timeline-item" style="padding-bottom: 15px;">
+                            <strong>Alert Created</strong><br>
+                            <small class="text-muted">{{ alert.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+
+                        {% if alert.acknowledged_at %}
+                        <div class="timeline-item" style="padding-bottom: 15px;">
+                            <strong>Alert Acknowledged</strong><br>
+                            <small class="text-muted">{{ alert.acknowledged_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                        {% endif %}
+
+                        {% if alert.resolved_at %}
+                        <div class="timeline-item">
+                            <strong>Alert Resolved</strong><br>
+                            <small class="text-muted">{{ alert.resolved_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Resolve Modal -->
+<div class="modal fade" id="resolveModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Resolve Alert</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="resolveForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="resolution_notes" class="form-label">Resolution Notes</label>
+                        <textarea class="form-control" id="resolution_notes" name="resolution_notes" rows="4" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Resolve Alert</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function acknowledgeAlert() {
+    fetch('/alerts/{{ alert.id }}/acknowledge', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    });
+}
+
+document.getElementById('resolveForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('/alerts/{{ alert.id }}/resolve', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error);
+    });
+});
+</script>
+{% endblock %}

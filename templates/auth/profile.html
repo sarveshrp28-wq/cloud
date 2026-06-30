@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - Cloud Security Monitor{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mt-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-user"></i> User Profile
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-4 text-center">
+                            <div style="width: 150px; height: 150px; margin: 0 auto; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                                        border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 48px;">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <p class="mt-3"><strong>{{ current_user.username }}</strong></p>
+                            <p>
+                                {% if current_user.role.value == 'admin' %}
+                                    <span class="badge bg-danger">ADMIN</span>
+                                {% elif current_user.role.value == 'analyst' %}
+                                    <span class="badge bg-warning">ANALYST</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">VIEWER</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <h5>Account Information</h5>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>Username</th>
+                                    <td>{{ current_user.username }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Email</th>
+                                    <td>{{ current_user.email }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Role</th>
+                                    <td>
+                                        {% if current_user.role.value == 'admin' %}
+                                            Administrator
+                                        {% elif current_user.role.value == 'analyst' %}
+                                            Security Analyst
+                                        {% else %}
+                                            Viewer
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Status</th>
+                                    <td>
+                                        {% if current_user.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Account Created</th>
+                                    <td>{{ current_user.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Last Login</th>
+                                    <td>
+                                        {% if current_user.last_login %}
+                                            {{ current_user.last_login.strftime('%Y-%m-%d %H:%M:%S') }}
+                                        {% else %}
+                                            Never
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h5>Change Password</h5>
+                    <form method="POST" action="/auth/change-password">
+                        <div class="mb-3">
+                            <label for="old_password" class="form-label">Current Password</label>
+                            <input type="password" class="form-control" id="old_password" name="old_password" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="new_password" class="form-label">New Password</label>
+                            <input type="password" class="form-control" id="new_password" name="new_password" required>
+                            <small class="text-muted">Minimum 6 characters</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="confirm_password" class="form-label">Confirm New Password</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Update Password
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Permissions Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-lock"></i> Your Permissions
+                </div>
+                <div class="card-body">
+                    {% if current_user.role.value == 'admin' %}
+                    <div class="alert alert-info mb-2">
+                        ✅ View Dashboard
+                    </div>
+                    <div class="alert alert-info mb-2">
+                        ✅ Manage Alerts
+                    </div>
+                    <div class="alert alert-info mb-2">
+                        ✅ View Events
+                    </div>
+                    <div class="alert alert-info mb-2">
+                        ✅ Generate Reports
+                    </div>
+                    <div class="alert alert-info mb-2">
+                        ✅ Manage Users
+                    </div>
+                    <div class="alert alert-info mb-0">
+                        ✅ View Audit Logs
+                    </div>
+                    {% elif current_user.role.value == 'analyst' %}
+                    <div class="alert alert-info mb-2">
+                        ✅ View Dashboard
+                    </div>
+                    <div class="alert alert-info mb-2">
+                        ✅ Manage Alerts
+                    </div>
+                    <div class="alert alert-info mb-2">
+                        ✅ View Events
+                    </div>
+                    <div class="alert alert-info mb-0">
+                        ✅ Generate Reports
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info mb-0">
+                        ✅ View Dashboard (Read-only)
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Security Tips -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-shield-alt"></i> Security Tips
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning mb-2">
+                        <strong>🔐 Strong Password</strong>
+                        <small>Use a unique password with numbers and special characters</small>
+                    </div>
+                    <div class="alert alert-warning mb-2">
+                        <strong>🔒 Keep Secure</strong>
+                        <small>Don't share your credentials with others</small>
+                    </div>
+                    <div class="alert alert-warning mb-0">
+                        <strong>⏱️ Timeout</strong>
+                        <small>Your session will expire after 24 hours for security</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
