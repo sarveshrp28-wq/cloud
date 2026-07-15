@@ -14,7 +14,7 @@
                         <p class="text-muted">Sign up for Cloud Security Monitor</p>
                     </div>
 
-                    <form method="POST">
+                    <form method="POST" action="{{ url_for('auth.register') }}">
                         <div class="mb-3">
                             <label for="username" class="form-label">Username</label>
                             <input type="text" class="form-control" id="username" name="username" required>
@@ -52,7 +52,7 @@
                     <hr class="my-4">
 
                     <p class="text-center text-muted">
-                        Already have an account? <a href="/auth/login">Login here</a>
+                        Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a>
                     </p>
                 </div>
             </div>

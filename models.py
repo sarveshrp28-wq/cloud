@@ -113,7 +113,8 @@ class SecurityEvent(db.Model):
     detected_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     raw_data = db.Column(db.JSON)
     
-    # Relationship
+    # Relationships
+    source_user = db.relationship('User', foreign_keys=[source_user_id], backref='security_events')
     alerts = db.relationship('Alert', backref='event', lazy=True, cascade='all, delete-orphan')
     
     def to_dict(self):

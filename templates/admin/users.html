@@ -4,161 +4,207 @@
 
 {% block content %}
 <div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-md-8">
+    <!-- Header -->
+    <div class="row mb-4 align-items-center">
+        <div class="col">
             <h1>
                 <i class="fas fa-users"></i> User Management
             </h1>
+            <small class="text-muted">Create and manage system users and their roles</small>
         </div>
-        <div class="col-md-4 text-end">
-            <a href="/auth/register" class="btn btn-primary">
+        <div class="col-auto">
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary">
                 <i class="fas fa-user-plus"></i> Create New User
             </a>
         </div>
     </div>
 
-    <!-- Users Table -->
-    <div class="card">
-        <div class="card-header">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span><i class="fas fa-list"></i> All Users</span>
-                <span class="badge bg-primary">{{ users|length }} Total</span>
-            </div>
-        </div>
-        <div class="table-responsive">
-            {% if users %}
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Status</th>
-                        <th>Last Login</th>
-                        <th>Created</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for user in users %}
-                    <tr>
-                        <td>
-                            <strong>{{ user.username }}</strong>
-                        </td>
-                        <td>
-                            {{ user.email }}
-                        </td>
-                        <td>
-                            {% if user.role.value == 'admin' %}
-                                <span class="badge bg-danger">ADMIN</span>
-                            {% elif user.role.value == 'analyst' %}
-                                <span class="badge bg-warning">ANALYST</span>
-                            {% else %}
-                                <span class="badge bg-secondary">VIEWER</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if user.is_active %}
-                                <span class="badge bg-success">Active</span>
-                            {% else %}
-                                <span class="badge bg-danger">Inactive</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if user.last_login %}
-                                <small class="text-muted">{{ user.last_login.strftime('%Y-%m-%d %H:%M') }}</small>
-                            {% else %}
-                                <small class="text-muted">Never</small>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <small class="text-muted">{{ user.created_at.strftime('%Y-%m-%d') }}</small>
-                        </td>
-                        <td>
-                            {% if current_user.id != user.id %}
-                            <button class="btn btn-sm btn-{{ 'warning' if user.is_active else 'success' }} btn-sm-icon" 
-                                    onclick="toggleUserStatus({{ user.id }})">
-                                <i class="fas fa-{{ 'ban' if user.is_active else 'check' }}"></i>
-                            </button>
-                            {% else %}
-                            <span class="text-muted text-center" style="display: inline-block; width: 38px;">-</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <div class="text-center p-5">
-                <i class="fas fa-users" style="font-size: 48px; color: #bdc3c7;"></i>
-                <p class="mt-3 text-muted">No users found</p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
     <!-- User Statistics -->
-    <div class="row mt-4">
-        <div class="col-md-4">
-            <div class="card stat-card">
+    <div class="row mb-4">
+        <div class="col-lg-3 col-sm-6 mb-3 mb-lg-0">
+            <div class="card stat-card h-100">
                 <div class="stat-number">{{ users|length }}</div>
                 <div class="stat-label">Total Users</div>
+                <div class="stat-trend text-muted">
+                    <small><i class="fas fa-info-circle"></i> System users</small>
+                </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card stat-card">
+        <div class="col-lg-3 col-sm-6 mb-3 mb-lg-0">
+            <div class="card stat-card h-100">
                 <div class="stat-number">{{ active_count }}</div>
                 <div class="stat-label">Active Users</div>
+                <div class="stat-trend text-success">
+                    {% if users|length > 0 %}
+                    <small><i class="fas fa-check"></i> {{ ((active_count / (users|length)) * 100)|int }}% active</small>
+                    {% else %}
+                    <small>No users</small>
+                    {% endif %}
+                </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card stat-card">
+        <div class="col-lg-3 col-sm-6 mb-3 mb-sm-0">
+            <div class="card stat-card h-100">
                 <div class="stat-number">{{ role_counts.admin }}</div>
-                <div class="stat-label">Admin Users</div>
+                <div class="stat-label">Administrators</div>
+                <div class="stat-trend text-warning">
+                    <small><i class="fas fa-shield-alt"></i> Full access</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="card stat-card h-100">
+                <div class="stat-number">{{ role_counts.analyst }}</div>
+                <div class="stat-label">Analysts</div>
+                <div class="stat-trend text-info">
+                    <small><i class="fas fa-chart-line"></i> Security team</small>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Role Distribution -->
-    <div class="row mt-4">
-        <div class="col-lg-6">
+    <!-- Users Table -->
+    <div class="row mb-4">
+        <div class="col-12">
             <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-list"></i> All Users
+                        </div>
+                        <span class="badge bg-primary">{{ users|length }} Total</span>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    {% if users %}
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="min-width: 150px;">Username</th>
+                                <th style="min-width: 200px;">Email</th>
+                                <th style="min-width: 100px;">Role</th>
+                                <th style="min-width: 100px;">Status</th>
+                                <th style="min-width: 180px;">Last Login</th>
+                                <th style="min-width: 120px;">Created</th>
+                                <th style="min-width: 80px;" class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: bold;">
+                                            {{ user.username[0].upper() }}
+                                        </div>
+                                        <strong>{{ user.username }}</strong>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small>{{ user.email }}</small>
+                                </td>
+                                <td>
+                                    {% if user.role.value == 'admin' %}
+                                        <span class="badge bg-danger"><i class="fas fa-crown"></i> ADMIN</span>
+                                    {% elif user.role.value == 'analyst' %}
+                                        <span class="badge bg-warning"><i class="fas fa-user-tie"></i> ANALYST</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary"><i class="fas fa-eye"></i> VIEWER</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.is_active %}
+                                        <span class="badge bg-success"><i class="fas fa-circle-check"></i> Active</span>
+                                    {% else %}
+                                        <span class="badge bg-danger"><i class="fas fa-circle-xmark"></i> Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {% if user.last_login %}
+                                            {{ user.last_login.strftime('%Y-%m-%d %H:%M') }}
+                                        {% else %}
+                                            <em>Never</em>
+                                        {% endif %}
+                                    </small>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ user.created_at.strftime('%Y-%m-%d') }}</small>
+                                </td>
+                                <td class="text-center">
+                                    {% if current_user.id != user.id %}
+                                    <button class="btn btn-sm btn-{{ 'warning' if user.is_active else 'success' }}" 
+                                            onclick="toggleUserStatus({{ user.id }}, '{{ user.username }}')"
+                                            title="{{ 'Deactivate' if user.is_active else 'Activate' }} user">
+                                        <i class="fas fa-{{ 'ban' if user.is_active else 'check' }}"></i>
+                                    </button>
+                                    {% else %}
+                                    <span class="text-muted" title="This is your account">
+                                        <i class="fas fa-lock"></i>
+                                    </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users" style="font-size: 48px; opacity: 0.5;"></i>
+                        <p class="mt-3 text-muted">No users found in system</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Role Distribution and Info -->
+    <div class="row">
+        <div class="col-lg-6 mb-4 mb-lg-0">
+            <div class="card h-100">
                 <div class="card-header">
                     <i class="fas fa-pie-chart"></i> User Role Distribution
                 </div>
                 <div class="card-body">
-                    <canvas id="roleChart" height="80"></canvas>
+                    <canvas id="roleChart" height="100"></canvas>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-6">
-            <div class="card">
+            <div class="card h-100">
                 <div class="card-header">
-                    <i class="fas fa-info-circle"></i> Role Definitions
+                    <i class="fas fa-shield-alt"></i> Role Definitions
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <h6><span class="badge bg-danger">ADMIN</span></h6>
+                    <div class="mb-3 pb-3 border-bottom">
+                        <h6 class="mb-2">
+                            <span class="badge bg-danger"><i class="fas fa-crown"></i> ADMIN</span>
+                        </h6>
                         <small class="text-muted">
-                            Full access to all features including user management, 
-                            threat detection configuration, and system settings.
+                            Full system access including user management, threat detection configuration, 
+                            system settings, and audit logs.
                         </small>
                     </div>
 
-                    <div class="mb-3">
-                        <h6><span class="badge bg-warning">ANALYST</span></h6>
+                    <div class="mb-3 pb-3 border-bottom">
+                        <h6 class="mb-2">
+                            <span class="badge bg-warning"><i class="fas fa-user-tie"></i> ANALYST</span>
+                        </h6>
                         <small class="text-muted">
-                            Can view and manage alerts, investigate security events, 
-                            and generate reports. Cannot manage users or system settings.
+                            Can manage and investigate alerts, analyze security events, 
+                            generate reports, but cannot modify users or system settings.
                         </small>
                     </div>
 
-                    <div class="mb-3">
-                        <h6><span class="badge bg-secondary">VIEWER</span></h6>
+                    <div class="mb-0">
+                        <h6 class="mb-2">
+                            <span class="badge bg-secondary"><i class="fas fa-eye"></i> VIEWER</span>
+                        </h6>
                         <small class="text-muted">
                             Read-only access to dashboard and reports. 
-                            Cannot modify alerts or manage any system settings.
+                            Cannot modify alerts, events, or system settings.
                         </small>
                     </div>
                 </div>
@@ -168,8 +214,12 @@
 </div>
 
 <script>
-    function toggleUserStatus(userId) {
-        if (confirm('Toggle user status?')) {
+    function toggleUserStatus(userId, username) {
+        const action = event.target.closest('button').classList.contains('btn-warning') ? 'deactivate' : 'activate';
+        if (confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} user "${username}"?`)) {
+            const btn = event.target.closest('button');
+            btn.disabled = true;
+            
             fetch(`/admin/users/${userId}/toggle-active`, {
                 method: 'POST',
                 headers: {
@@ -182,10 +232,12 @@
                     location.reload();
                 } else {
                     alert('Error: ' + data.message);
+                    btn.disabled = false;
                 }
             })
             .catch(error => {
-                alert('Error: ' + error);
+                alert('Error: ' + error.message);
+                btn.disabled = false;
             });
         }
     }
@@ -208,7 +260,9 @@
                     '#e74c3c',
                     '#f39c12',
                     '#95a5a6'
-                ]
+                ],
+                borderColor: 'rgba(11, 18, 33, 0.94)',
+                borderWidth: 2
             }]
         },
         options: {
@@ -216,7 +270,11 @@
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'bottom',
+                    labels: {
+                        color: 'rgba(238, 244, 255, 0.8)',
+                        padding: 15
+                    }
                 }
             }
         }

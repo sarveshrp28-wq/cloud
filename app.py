@@ -1,6 +1,17 @@
 from flask import Flask, render_template, jsonify, request, redirect, url_for, send_from_directory
 from flask_login import LoginManager, login_required, current_user
-from models import db, User, UserRole, LoginLog, ActivityLog, SecurityEvent, Alert, SystemConfig
+from models import (
+    db,
+    User,
+    UserRole,
+    LoginLog,
+    ActivityLog,
+    SecurityEvent,
+    Alert,
+    AlertSeverity,
+    AlertStatus,
+    SystemConfig
+)
 from auth import auth_bp, analyst_required, admin_required
 from threats import ThreatDetector, log_activity
 from datetime import datetime, timedelta
@@ -27,6 +38,8 @@ def create_app(config_name='development'):
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
     app.config['SESSION_COOKIE_SECURE'] = config_name == 'production'
     app.config['SESSION_COOKIE_HTTPONLY'] = True
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['REMEMBER_COOKIE_HTTPONLY'] = True
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
     
     # Initialize extensions
@@ -49,9 +62,37 @@ def create_app(config_name='development'):
     def inject_now():
         return {'now': datetime.utcnow}
     
-    # Create database tables
+    # Create database tables and seed default users
     with app.app_context():
         db.create_all()
+        if not User.query.filter_by(username='admin').first():
+            admin_user = User(
+                username='admin',
+                email='admin@example.com',
+                role=UserRole.ADMIN
+            )
+            admin_user.set_password('password123')
+            db.session.add(admin_user)
+
+        if not User.query.filter_by(username='analyst').first():
+            analyst_user = User(
+                username='analyst',
+                email='analyst@example.com',
+                role=UserRole.ANALYST
+            )
+            analyst_user.set_password('password123')
+            db.session.add(analyst_user)
+
+        if not User.query.filter_by(username='viewer').first():
+            viewer_user = User(
+                username='viewer',
+                email='viewer@example.com',
+                role=UserRole.VIEWER
+            )
+            viewer_user.set_password('password123')
+            db.session.add(viewer_user)
+
+        db.session.commit()
     
     # ==================== MAIN ROUTES ====================
     
@@ -75,8 +116,8 @@ def create_app(config_name='development'):
         """Main dashboard"""
         # Get statistics
         total_alerts = Alert.query.count()
-        critical_alerts = Alert.query.filter(Alert.severity.in_(['critical'])).count()
-        open_alerts = Alert.query.filter(Alert.status == 'open').count()
+        critical_alerts = Alert.query.filter(Alert.severity == AlertSeverity.CRITICAL).count()
+        open_alerts = Alert.query.filter(Alert.status == AlertStatus.OPEN).count()
         
         # Get recent events
         recent_events = SecurityEvent.query.order_by(
@@ -119,17 +160,25 @@ def create_app(config_name='development'):
     @analyst_required
     def alerts_list():
         """List all alerts"""
-        status = request.args.get('status', 'open')
+        status = request.args.get('status')
         severity = request.args.get('severity')
         page = request.args.get('page', 1, type=int)
         
         query = Alert.query
         
         if status:
-            query = query.filter(Alert.status == status)
+            try:
+                status_enum = AlertStatus(status)
+                query = query.filter(Alert.status == status_enum)
+            except ValueError:
+                pass
         
         if severity:
-            query = query.filter(Alert.severity == severity)
+            try:
+                severity_enum = AlertSeverity(severity)
+                query = query.filter(Alert.severity == severity_enum)
+            except ValueError:
+                pass
         
         alerts = query.order_by(Alert.created_at.desc()).paginate(page=page, per_page=20)
         
@@ -160,7 +209,7 @@ def create_app(config_name='development'):
     def acknowledge_alert(alert_id):
         """Acknowledge an alert"""
         alert = Alert.query.get_or_404(alert_id)
-        alert.status = 'acknowledged'
+        alert.status = AlertStatus.ACKNOWLEDGED
         alert.acknowledged_at = datetime.utcnow()
         alert.assigned_to = current_user.id
         db.session.commit()
@@ -183,7 +232,7 @@ def create_app(config_name='development'):
         alert = Alert.query.get_or_404(alert_id)
         resolution_notes = request.form.get('resolution_notes', '')
         
-        alert.status = 'resolved'
+        alert.status = AlertStatus.RESOLVED
         alert.resolved_at = datetime.utcnow()
         alert.resolution_notes = resolution_notes
         db.session.commit()
@@ -216,7 +265,11 @@ def create_app(config_name='development'):
             query = query.filter(SecurityEvent.event_type == event_type)
         
         if severity:
-            query = query.filter(SecurityEvent.severity == severity)
+            try:
+                severity_enum = AlertSeverity(severity)
+                query = query.filter(SecurityEvent.severity == severity_enum)
+            except ValueError:
+                pass
         
         events = query.order_by(SecurityEvent.detected_at.desc()).paginate(page=page, per_page=20)
         
@@ -260,16 +313,34 @@ def create_app(config_name='development'):
         ).count()
         
         # Event type distribution
-        event_distribution = db.session.query(
+        event_dist_query = db.session.query(
             SecurityEvent.event_type,
             func.count(SecurityEvent.id).label('count')
         ).filter(
             SecurityEvent.detected_at >= week_ago
         ).group_by(SecurityEvent.event_type).all()
+        event_distribution = [
+            {'type': event_type, 'count': count} for event_type, count in event_dist_query
+        ]
+        
+        # Severity distribution for reports
+        severity_distribution_query = db.session.query(
+            SecurityEvent.severity,
+            func.count(SecurityEvent.id).label('count')
+        ).filter(
+            SecurityEvent.detected_at >= week_ago
+        ).group_by(SecurityEvent.severity).all()
+        severity_distribution = [
+            (severity.value, count) for severity, count in severity_distribution_query
+        ]
+        severity_labels = [
+            severity.replace('_', ' ').title() for severity, count in severity_distribution
+        ]
+        severity_counts = [count for severity, count in severity_distribution]
         
         # Alert resolution stats
         resolved_alerts = Alert.query.filter(
-            Alert.status == 'resolved'
+            Alert.status == AlertStatus.RESOLVED
         ).count()
         
         total_alerts = Alert.query.count()
@@ -279,6 +350,9 @@ def create_app(config_name='development'):
                              today_events=today_events,
                              week_events=week_events,
                              event_distribution=event_distribution,
+                             severity_distribution=severity_distribution,
+                             severity_labels=severity_labels,
+                             severity_counts=severity_counts,
                              resolved_alerts=resolved_alerts,
                              resolution_rate=resolution_rate)
     
@@ -353,8 +427,8 @@ def create_app(config_name='development'):
     def api_alerts_summary():
         """API endpoint for alert summary"""
         total = Alert.query.count()
-        critical = Alert.query.filter(Alert.severity == 'critical').count()
-        open_count = Alert.query.filter(Alert.status == 'open').count()
+        critical = Alert.query.filter(Alert.severity == AlertSeverity.CRITICAL).count()
+        open_count = Alert.query.filter(Alert.status == AlertStatus.OPEN).count()
         
         return jsonify({
             'total': total,
@@ -419,7 +493,7 @@ def create_app(config_name='development'):
         total = Alert.query.count()
         if total == 0:
             return 0
-        resolved = Alert.query.filter(Alert.status == 'resolved').count()
+        resolved = Alert.query.filter(Alert.status == AlertStatus.RESOLVED).count()
         return (resolved / total) * 100
     
     return app

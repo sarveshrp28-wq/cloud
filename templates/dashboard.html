@@ -4,58 +4,94 @@
 
 {% block content %}
 <div class="container-fluid">
-    <h1 class="mb-4">
-        <i class="fas fa-shield-alt"></i> Security Dashboard
-    </h1>
+    <!-- Header -->
+    <div class="row mb-4 align-items-center">
+        <div class="col">
+            <h1>
+                <i class="fas fa-shield-alt"></i> Security Dashboard
+            </h1>
+            <small class="text-muted">Real-time security monitoring and threat detection</small>
+        </div>
+        {% if current_user.role.value == 'admin' %}
+        <div class="col-auto">
+            <button class="btn btn-outline-primary btn-sm" onclick="runThreatDetection()" title="Run threat detection">
+                <i class="fas fa-sync-alt"></i> Scan Now
+            </button>
+        </div>
+        {% endif %}
+    </div>
 
     <!-- Key Metrics Row -->
     <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card stat-card">
-                <div class="stat-number text-danger">{{ total_alerts }}</div>
+        <div class="col-lg-3 col-sm-6 mb-3 mb-lg-0">
+            <div class="card stat-card stat-card-danger h-100">
+                <div class="stat-number">{{ total_alerts }}</div>
                 <div class="stat-label">Total Alerts</div>
+                <div class="stat-trend text-muted">
+                    <small><i class="fas fa-info-circle"></i> All-time</small>
+                </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card stat-card">
-                <div class="stat-number text-warning">{{ critical_alerts }}</div>
-                <div class="stat-label">Critical Alerts</div>
+        <div class="col-lg-3 col-sm-6 mb-3 mb-lg-0">
+            <div class="card stat-card stat-card-warning h-100">
+                <div class="stat-number">{{ critical_alerts }}</div>
+                <div class="stat-label">Critical</div>
+                <div class="stat-trend text-danger">
+                    {% if total_alerts > 0 %}
+                    <small><i class="fas fa-arrow-up"></i> {{ ((critical_alerts / total_alerts) * 100)|int }}% severity</small>
+                    {% else %}
+                    <small>No alerts</small>
+                    {% endif %}
+                </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card stat-card">
-                <div class="stat-number text-info">{{ open_alerts }}</div>
-                <div class="stat-label">Open Alerts</div>
+        <div class="col-lg-3 col-sm-6 mb-3 mb-sm-0">
+            <div class="card stat-card stat-card-info h-100">
+                <div class="stat-number">{{ open_alerts }}</div>
+                <div class="stat-label">Open</div>
+                <div class="stat-trend text-warning">
+                    <small><i class="fas fa-exclamation"></i> Needs action</small>
+                </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card stat-card">
-                <div class="stat-number text-success">{{ (total_alerts - open_alerts) if total_alerts > 0 else 0 }}</div>
-                <div class="stat-label">Resolved Alerts</div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="card stat-card stat-card-success h-100">
+                <div class="stat-number">{{ (total_alerts - open_alerts) if total_alerts > 0 else 0 }}</div>
+                <div class="stat-label">Resolved</div>
+                <div class="stat-trend text-success">
+                    {% if total_alerts > 0 %}
+                    <small><i class="fas fa-check"></i> {{ (((total_alerts - open_alerts) / total_alerts) * 100)|int }}% rate</small>
+                    {% else %}
+                    <small>No data</small>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Charts Row -->
     <div class="row mb-4">
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-chart-line"></i> Alert Trend (Last 7 Days)
+        <div class="col-lg-8 mb-4 mb-lg-0">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-chart-line"></i> Alert Trend (Last 7 Days)
+                    </div>
+                    <small class="text-muted">Real-time updates</small>
                 </div>
                 <div class="card-body">
-                    <canvas id="alertTrendChart" height="80"></canvas>
+                    <canvas id="alertTrendChart" height="100"></canvas>
                 </div>
             </div>
         </div>
         
         <div class="col-lg-4">
-            <div class="card">
+            <div class="card h-100">
                 <div class="card-header">
-                    <i class="fas fa-exclamation-circle"></i> Alert Severity Distribution
+                    <i class="fas fa-exclamation-circle"></i> Severity Breakdown
                 </div>
                 <div class="card-body">
-                    <canvas id="severityChart" height="80"></canvas>
+                    <canvas id="severityChart" height="100"></canvas>
                 </div>
             </div>
         </div>
@@ -64,41 +100,48 @@
     <!-- Recent Events and Logins Row -->
     <div class="row">
         <!-- Recent Security Events -->
-        <div class="col-lg-6">
-            <div class="card">
+        <div class="col-lg-6 mb-4 mb-lg-0">
+            <div class="card h-100 d-flex flex-column">
                 <div class="card-header">
-                    <i class="fas fa-exclamation-triangle"></i> Recent Security Events
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-exclamation-triangle"></i> Recent Security Events
+                        </div>
+                        <span class="badge bg-danger">{{ recent_events|length }}</span>
+                    </div>
                 </div>
-                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                <div class="card-body flex-grow-1" style="max-height: 450px; overflow-y: auto;">
                     {% if recent_events %}
                         {% for event in recent_events %}
-                        <div class="alert-item {{ event.severity.value }}">
-                            <div style="display: flex; justify-content: space-between; align-items: start;">
-                                <div>
-                                    <strong>{{ event.event_type.replace('_', ' ').title() }}</strong>
-                                    <br>
-                                    <small class="text-muted">{{ event.description[:100] }}...</small>
-                                    <br>
-                                    <small class="text-muted">
+                        <div class="alert-item {{ event.severity.value }} mb-2">
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="fw-bold">{{ event.event_type.replace('_', ' ').title() }}</div>
+                                    <div class="text-muted small">{{ event.description[:80] }}{% if event.description|length > 80 %}...{% endif %}</div>
+                                    <div class="text-muted small mt-1">
                                         <i class="fas fa-clock"></i> {{ event.detected_at.strftime('%Y-%m-%d %H:%M') }}
-                                    </small>
+                                    </div>
                                 </div>
-                                <span class="badge badge-{{ event.severity.value }}">
+                                <span class="badge badge-{{ event.severity.value }} text-nowrap">
                                     {{ event.severity.value.upper() }}
                                 </span>
                             </div>
                         </div>
                         {% endfor %}
                     {% else %}
-                        <div class="empty-state">
-                            <i class="fas fa-check-circle"></i>
-                            <p>No recent security events</p>
+                        <div class="text-center py-5">
+                            <i class="fas fa-check-circle text-success" style="font-size: 40px; opacity: 0.5;"></i>
+                            <p class="mt-3 text-muted">No recent security events</p>
                         </div>
                     {% endif %}
                 </div>
-                <div class="card-footer">
+                <div class="card-footer border-top">
                     {% if current_user.role.value in ['analyst', 'admin'] %}
-                    <a href="/events" class="btn btn-sm btn-primary">View All Events</a>
+                    <a href="{{ url_for('events_list') }}" class="btn btn-sm btn-outline-primary w-100">
+                        <i class="fas fa-arrow-right"></i> View All Events
+                    </a>
+                    {% else %}
+                    <small class="text-muted">You don't have access to events</small>
                     {% endif %}
                 </div>
             </div>
@@ -106,31 +149,37 @@
 
         <!-- Recent Logins -->
         <div class="col-lg-6">
-            <div class="card">
+            <div class="card h-100 d-flex flex-column">
                 <div class="card-header">
-                    <i class="fas fa-sign-in-alt"></i> Recent Logins
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-sign-in-alt"></i> Recent Logins
+                        </div>
+                        <span class="badge bg-info">{{ recent_logins|length }}</span>
+                    </div>
                 </div>
-                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                <div class="card-body flex-grow-1" style="max-height: 450px; overflow-y: auto;">
                     {% if recent_logins %}
                         <div class="timeline">
                             {% for login in recent_logins %}
-                            <div class="timeline-item">
+                            <div class="timeline-item pb-3">
                                 <div>
-                                    <strong>{{ login.username }}</strong>
-                                    <br>
-                                    <small class="text-muted">{{ login.ip_address }}</small>
-                                    <br>
-                                    <small class="text-muted">
+                                    <div class="fw-bold">{{ login.username }}</div>
+                                    <div class="text-muted small">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                        <code>{{ login.ip_address }}</code>
+                                    </div>
+                                    <div class="text-muted small">
                                         <i class="fas fa-clock"></i> {{ login.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
-                                    </small>
+                                    </div>
                                 </div>
                             </div>
                             {% endfor %}
                         </div>
                     {% else %}
-                        <div class="empty-state">
-                            <i class="fas fa-user-slash"></i>
-                            <p>No recent logins</p>
+                        <div class="text-center py-5">
+                            <i class="fas fa-user-slash text-warning" style="font-size: 40px; opacity: 0.5;"></i>
+                            <p class="mt-3 text-muted">No recent logins</p>
                         </div>
                     {% endif %}
                 </div>
@@ -144,24 +193,72 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <i class="fas fa-cog"></i> Admin Actions
+                    <i class="fas fa-cog"></i> Admin Panel
                 </div>
                 <div class="card-body">
-                    <button class="btn btn-primary" onclick="runThreatDetection()">
-                        <i class="fas fa-search"></i> Run Threat Detection
-                    </button>
-                    <a href="/admin/users" class="btn btn-secondary">
-                        <i class="fas fa-users"></i> Manage Users
-                    </a>
-                    <a href="/admin/logs" class="btn btn-secondary">
-                        <i class="fas fa-history"></i> View Audit Logs
-                    </a>
+                    <div class="row g-2">
+                        <div class="col-auto">
+                            <button class="btn btn-primary" onclick="runThreatDetection()">
+                                <i class="fas fa-search"></i> Run Threat Detection
+                            </button>
+                        </div>
+                        <div class="col-auto">
+                            <a href="{{ url_for('manage_users') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-users"></i> Manage Users
+                            </a>
+                        </div>
+                        <div class="col-auto">
+                            <a href="{{ url_for('audit_logs') }}" class="btn btn-outline-primary">
+                                <i class="fas fa-history"></i> Audit Logs
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     {% endif %}
 </div>
+
+<style>
+    .stat-card {
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-card-danger {
+        border-left: 4px solid #e74c3c;
+    }
+
+    .stat-card-warning {
+        border-left: 4px solid #f39c12;
+    }
+
+    .stat-card-info {
+        border-left: 4px solid #3498db;
+    }
+
+    .stat-card-success {
+        border-left: 4px solid #2ecc71;
+    }
+
+    .stat-trend {
+        margin-top: 8px;
+        font-size: 0.85rem;
+    }
+
+    @media (max-width: 768px) {
+        .stat-card {
+            margin-bottom: 12px;
+        }
+    }
+</style>
 
 {% endblock %}
 
@@ -174,32 +271,55 @@
     new Chart(trendCtx, {
         type: 'line',
         data: {
-            labels: chartData.dates,
+            labels: chartData.dates.length > 0 ? chartData.dates : ['No data'],
             datasets: [{
-                label: 'Alerts',
-                data: chartData.counts,
+                label: 'Alerts Created',
+                data: chartData.counts.length > 0 ? chartData.counts : [0],
                 borderColor: '#e74c3c',
                 backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                tension: 0.3,
+                borderWidth: 2,
+                tension: 0.4,
                 fill: true,
                 pointRadius: 5,
-                pointBackgroundColor: '#e74c3c'
+                pointBackgroundColor: '#e74c3c',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
             plugins: {
                 legend: {
                     display: true,
-                    position: 'top'
+                    position: 'top',
+                    labels: {
+                        color: 'rgba(238, 244, 255, 0.8)',
+                        padding: 15
+                    }
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
                     ticks: {
-                        stepSize: 1
+                        stepSize: 1,
+                        color: 'rgba(238, 244, 255, 0.6)'
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: 'rgba(238, 244, 255, 0.6)'
+                    },
+                    grid: {
+                        display: false
                     }
                 }
             }
@@ -208,23 +328,29 @@
 
     // Severity Distribution Chart
     const severityCtx = document.getElementById('severityChart').getContext('2d');
+    const total = {{ total_alerts }};
+    const criticalCount = {{ critical_alerts }};
+    const openCount = {{ open_alerts }};
+    
     new Chart(severityCtx, {
         type: 'doughnut',
         data: {
             labels: ['Critical', 'High', 'Medium', 'Low'],
             datasets: [{
                 data: [
-                    {{ critical_alerts }},
-                    {% if total_alerts - critical_alerts > 0 %}{{ (total_alerts - critical_alerts) // 2 }}{% else %}0{% endif %},
-                    {% if total_alerts - critical_alerts > 0 %}{{ (total_alerts - critical_alerts) // 2 }}{% else %}0{% endif %},
-                    {% if total_alerts == 0 %}1{% else %}0{% endif %}
+                    criticalCount,
+                    Math.max(0, Math.floor((total - criticalCount) * 0.33)),
+                    Math.max(0, Math.floor((total - criticalCount) * 0.33)),
+                    Math.max(0, (total - criticalCount) - Math.floor((total - criticalCount) * 0.66))
                 ],
                 backgroundColor: [
                     '#e74c3c',
                     '#f39c12',
                     '#3498db',
                     '#95a5a6'
-                ]
+                ],
+                borderColor: 'rgba(11, 18, 33, 0.94)',
+                borderWidth: 2
             }]
         },
         options: {
@@ -232,7 +358,11 @@
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    position: 'bottom'
+                    position: 'bottom',
+                    labels: {
+                        color: 'rgba(238, 244, 255, 0.8)',
+                        padding: 15
+                    }
                 }
             }
         }
@@ -240,7 +370,12 @@
 
     // Run Threat Detection
     function runThreatDetection() {
-        if (confirm('Run threat detection now? This may take a moment.')) {
+        if (confirm('Run threat detection now? This will scan for security threats.')) {
+            const btn = event.target.closest('button');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning...';
+            
             fetch('/api/run-threat-detection', {
                 method: 'POST',
                 headers: {
@@ -249,15 +384,19 @@
             })
             .then(response => response.json())
             .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
                 if (data.status === 'success') {
-                    alert('Threat detection completed successfully!');
+                    alert('✓ Threat detection completed successfully!');
                     location.reload();
                 } else {
-                    alert('Error: ' + data.message);
+                    alert('✗ Error: ' + data.message);
                 }
             })
             .catch(error => {
-                alert('Error: ' + error);
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                alert('✗ Error: ' + error.message);
             });
         }
     }

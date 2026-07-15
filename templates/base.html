@@ -319,14 +319,14 @@
                             <i class="fas fa-user"></i> {{ current_user.username }}
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="/auth/profile">Profile</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">Profile</a></li>
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="/auth/logout">Logout</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
                         </ul>
                     </li>
                     {% else %}
                     <li class="nav-item">
-                        <a class="nav-link" href="/auth/login">Login</a>
+                        <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
                     </li>
                     {% endif %}
                 </ul>
@@ -338,23 +338,23 @@
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="nav flex-column">
-            <a href="/dashboard" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+            <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
                 <i class="fas fa-chart-line"></i> Dashboard
             </a>
             
             {% if current_user.role.value in ['analyst', 'admin'] %}
-            <a href="/alerts" class="nav-link {% if request.endpoint == 'alerts_list' %}active{% endif %}">
+            <a href="{{ url_for('alerts_list') }}" class="nav-link {% if request.endpoint == 'alerts_list' %}active{% endif %}">
                 <i class="fas fa-bell"></i> Alerts
                 <span class="badge bg-danger float-end">
                     <span id="alert-count">0</span>
                 </span>
             </a>
             
-            <a href="/events" class="nav-link {% if request.endpoint == 'events_list' %}active{% endif %}">
+            <a href="{{ url_for('events_list') }}" class="nav-link {% if request.endpoint == 'events_list' %}active{% endif %}">
                 <i class="fas fa-exclamation-triangle"></i> Events
             </a>
             
-            <a href="/reports" class="nav-link {% if request.endpoint == 'reports' %}active{% endif %}">
+            <a href="{{ url_for('reports') }}" class="nav-link {% if request.endpoint == 'reports' %}active{% endif %}">
                 <i class="fas fa-chart-bar"></i> Reports
             </a>
             {% endif %}
@@ -363,11 +363,11 @@
             <hr style="border-color: rgba(255,255,255,0.1)">
             <span style="padding-left: 20px; font-size: 12px; color: rgba(255,255,255,0.6);">ADMIN</span>
             
-            <a href="/admin/users" class="nav-link {% if request.endpoint == 'manage_users' %}active{% endif %}">
+            <a href="{{ url_for('manage_users') }}" class="nav-link {% if request.endpoint == 'manage_users' %}active{% endif %}">
                 <i class="fas fa-users"></i> User Management
             </a>
             
-            <a href="/admin/logs" class="nav-link {% if request.endpoint == 'audit_logs' %}active{% endif %}">
+            <a href="{{ url_for('audit_logs') }}" class="nav-link {% if request.endpoint == 'audit_logs' %}active{% endif %}">
                 <i class="fas fa-history"></i> Audit Logs
             </a>
             {% endif %}

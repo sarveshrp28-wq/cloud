@@ -14,7 +14,7 @@
                         <p class="text-muted">Login to your account</p>
                     </div>
 
-                    <form method="POST">
+                    <form method="POST" action="{{ url_for('auth.login') }}">
                         <div class="mb-3">
                             <label for="username" class="form-label">Username</label>
                             <input type="text" class="form-control" id="username" name="username" required>
@@ -38,7 +38,7 @@
                     <hr class="my-4">
 
                     <p class="text-center text-muted">
-                        Don't have an account? <a href="/auth/register">Register here</a>
+                        Don't have an account? <a href="{{ url_for('auth.register') }}">Register here</a>
                     </p>
                 </div>
             </div>

@@ -73,8 +73,7 @@
                         {% if event.source_user_id %}
                         <div class="col-md-6">
                             <p><strong>Source User:</strong><br>
-                            {% set source_user = event.event.user if event.event else None %}
-                            {{ source_user.username if source_user else 'Unknown' }}
+                            {{ event.source_user.username if event.source_user else 'Unknown' }}
                             </p>
                         </div>
                         {% endif %}
